@@ -1,0 +1,7 @@
+new_env/
+.idea/
+
+*.pyc
+restaurant_voting/settings/local*.py
+
+db.sqlite3

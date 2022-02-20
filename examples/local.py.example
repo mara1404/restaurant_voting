@@ -1,0 +1,18 @@
+"""
+Example local.py settings file.
+File directory: restaurant_voting/settings/
+"""
+from .base import *
+
+SECRET_KEY = 'example-secret-key'
+
+DEBUG = True / False
+
+ALLOWED_HOSTS = ['list-of-allowed-hosts']
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db-name',
+    }
+}
