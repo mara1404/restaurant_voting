@@ -21,6 +21,18 @@ class RestaurantListBaseSerializer(serializers.ModelSerializer):
         fields = ('title', 'address', 'distinct_voted_users', 'rating')
 
 
+class RestaurantWinnersHistory(serializers.ModelSerializer):
+    date = serializers.ReadOnlyField(source='created_datetime__date')
+    title = serializers.ReadOnlyField(source='restaurant__title')
+    address = serializers.ReadOnlyField(source='restaurant__address')
+    rating = serializers.ReadOnlyField()
+    total_distinct_users_voted = serializers.ReadOnlyField()
+
+    class Meta:
+        model = RestaurantUserVote
+        fields = ('date', 'restaurant_id', 'title', 'address', 'rating', 'total_distinct_users_voted')
+
+
 class RestaurantsListSerializer(RestaurantListBaseSerializer):
     user_vote_count_today = serializers.ReadOnlyField()
     can_user_vote_today = serializers.ReadOnlyField()

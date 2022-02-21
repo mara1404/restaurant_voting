@@ -10,6 +10,7 @@ pip3 install -r requirements.list
 ```
 
 ##### local.py file
+Change `SECRET_KEY`, `DEBUG`, `ALLOWED_HOSTS`, `DATABASES` values as needed
 ```commandline
 cp examples/local.py.example restaurant_voting/settings/local.py
 ```
@@ -31,8 +32,11 @@ python manage.py runserver
 
 ## API usage
 
-User daily vote count saved in User model.   
-restaurant list and restaurant history ordered by biggest rating and most distinct users, so winner restaurant is first in lists
+User daily vote count saved in User model.  
+
+All views require user to be authenticated. Easiest way is to create Django superuser and login through Django admin page
+
+restaurant list and restaurant history views ordered by biggest rating and most distinct users, so winner restaurant is first element in lists
 
 /restaurant/create/ - create restaurant. POST data: {'title': 'x', 'address': 'x'}  
 /restaurant/list/ - list of restaurants with ratings and current user vote information  
@@ -41,6 +45,11 @@ restaurant list and restaurant history ordered by biggest rating and most distin
 - date_before - date
 - restaurants (multiple) - restaurant id
 
-/restaurant/<restaurant-id>/update/ - update restaurant. POST data: {'title': 'x', 'address': 'x'}  
-/restaurant/<restaurant-id>/delete/ - delete restaurant  
-/restaurant/<restaurant-id>/vote/ - vote for restaurant
+/restaurant/winners_history/ - list of winner restaurants. Query param filters:
+- date_after - date
+- date_before - date
+- restaurants (multiple) - restaurant id
+
+/restaurant/<restaurant_id>/update/ - update restaurant. POST data: {'title': 'x', 'address': 'x'}  
+/restaurant/<restaurant_id>/delete/ - delete restaurant  
+/restaurant/<restaurant_id>/vote/ - vote for restaurant

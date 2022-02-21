@@ -1,11 +1,10 @@
 from django.conf import settings
-from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from common.models import TimestampModelFields
-from .managers import CurrentDayVoteManager
+from .managers import CurrentDayRestaurantUserVoteManager
 
 
 class Restaurant(TimestampModelFields, models.Model):
@@ -52,7 +51,7 @@ class RestaurantUserVote(TimestampModelFields, models.Model):
     )
 
     objects = models.Manager()
-    current_day_votes = CurrentDayVoteManager()
+    current_day_votes = CurrentDayRestaurantUserVoteManager()
 
     class Meta:
         verbose_name = _('restaurant user vote')

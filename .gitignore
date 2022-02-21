@@ -1,7 +1,6 @@
 new_env/
+venv/
 .idea/
-
 *.pyc
 restaurant_voting/settings/local*.py
-
 db.sqlite3

@@ -8,7 +8,7 @@ from restaurants.models import Restaurant, RestaurantUserVote
 from users.models import User
 
 
-class CurrentDayVoteManagerShould(TestCase):
+class CurrentDayRestaurantUserVoteManagerShould(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username='u')
         self.restaurant = Restaurant.objects.create(title='TestTitle', address='TestAddress')

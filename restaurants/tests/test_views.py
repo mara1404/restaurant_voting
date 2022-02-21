@@ -405,6 +405,148 @@ class ListRestaurantsHistoryShould(TestCase):
         self.assertEqual(response.data.get('results')[0].get('rating'), 0.5)
 
 
+class ListRestaurantWinnersHistoryShould(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.url = reverse('restaurant_winners_history')
+
+    def test_return_http_403_when_user_is_anonymous(self):
+        response = self.client.get(self.url)
+        self.assertContains(response, status_code=403, text='')
+
+    def test_return_http_200_when_user_is_authenticated(self):
+        self.client.force_authenticate(User.objects.create_user(username='u'))
+        response = self.client.get(self.url)
+
+        self.assertContains(response, status_code=200, text='')
+
+    def test_have_empty_queryset_when_no_restaurant_user_votes_exists(self):
+        user = User.objects.create_user(username='u')
+        self.client.force_authenticate(user)
+        response = self.client.get(self.url)
+
+        self.assertQuerysetEqual(response.data.get('results'), [])
+
+    @mock.patch('django.utils.timezone.now')
+    def test_have_queryset_with_element_for_each_day_when_single_restaurant_votes_exists(self, mocked_timezone_now):
+        user = User.objects.create_user(username='u')
+        self.client.force_authenticate(user)
+        mocked_timezone_now.return_value = make_aware(datetime(2020, 1, 1))
+        restaurant = Restaurant.objects.create(title='TestTitle', address='TestAddress')
+        RestaurantUserVote.objects.create(user=user, restaurant=restaurant, vote_weight=0.5)
+        RestaurantUserVote.objects.create(user=user, restaurant=restaurant, vote_weight=0.5)
+        mocked_timezone_now.return_value = make_aware(datetime(2020, 1, 3))
+        RestaurantUserVote.objects.create(user=user, restaurant=restaurant, vote_weight=0.5)
+        response = self.client.get(self.url)
+
+        self.assertListEqual(
+            [result['date'] for result in response.data.get('results')],
+            [datetime(2020, 1, 1).date(), datetime(2020, 1, 3).date()]
+        )
+
+    @mock.patch('django.utils.timezone.now')
+    def test_have_queryset_with_each_day_rating_sum_when_single_restaurant_votes_exists(self, mocked_timezone_now):
+        user = User.objects.create_user(username='u')
+        user2 = User.objects.create_user(username='u2')
+        self.client.force_authenticate(user)
+        mocked_timezone_now.return_value = make_aware(datetime(2020, 1, 1))
+        restaurant = Restaurant.objects.create(title='TestTitle', address='TestAddress')
+        RestaurantUserVote.objects.create(user=user, restaurant=restaurant, vote_weight=1)
+        RestaurantUserVote.objects.create(user=user2, restaurant=restaurant, vote_weight=0.7)
+        mocked_timezone_now.return_value = make_aware(datetime(2020, 1, 3))
+        RestaurantUserVote.objects.create(user=user, restaurant=restaurant, vote_weight=0.8)
+        response = self.client.get(self.url)
+
+        self.assertListEqual(
+            [(result['date'], result['rating']) for result in response.data.get('results')],
+            [(datetime(2020, 1, 1).date(), 1.7), (datetime(2020, 1, 3).date(), 0.8)]
+        )
+
+    @mock.patch('django.utils.timezone.now')
+    def test_have_queryset_with_each_day_total_distinct_users_voted_when_single_restaurant_votes_exists(
+            self, mocked_timezone_now
+    ):
+        user = User.objects.create_user(username='u')
+        user2 = User.objects.create_user(username='u2')
+        self.client.force_authenticate(user)
+        mocked_timezone_now.return_value = make_aware(datetime(2020, 1, 1))
+        restaurant = Restaurant.objects.create(title='TestTitle', address='TestAddress')
+        RestaurantUserVote.objects.create(user=user, restaurant=restaurant, vote_weight=1)
+        RestaurantUserVote.objects.create(user=user2, restaurant=restaurant, vote_weight=0.7)
+        mocked_timezone_now.return_value = make_aware(datetime(2020, 1, 3))
+        RestaurantUserVote.objects.create(user=user, restaurant=restaurant, vote_weight=0.8)
+        response = self.client.get(self.url)
+
+        self.assertListEqual(
+            [(result['date'], result['total_distinct_users_voted']) for result in response.data.get('results')],
+            [(datetime(2020, 1, 1).date(), 2), (datetime(2020, 1, 3).date(), 1)]
+        )
+
+    @mock.patch('django.utils.timezone.now')
+    def test_have_queryset_with_each_day_biggest_rating_when_multiple_restaurant_votes_exists(
+            self, mocked_timezone_now
+    ):
+        user = User.objects.create_user(username='u')
+        user2 = User.objects.create_user(username='u2')
+        self.client.force_authenticate(user)
+        mocked_timezone_now.return_value = make_aware(datetime(2020, 1, 1))
+        restaurant1 = Restaurant.objects.create(title='TestTitle1', address='TestAddress')
+        restaurant2 = Restaurant.objects.create(title='TestTitle2', address='TestAddress')
+        RestaurantUserVote.objects.create(user=user, restaurant=restaurant1, vote_weight=1)
+        RestaurantUserVote.objects.create(user=user2, restaurant=restaurant1, vote_weight=0.7)
+        RestaurantUserVote.objects.create(user=user, restaurant=restaurant2, vote_weight=1)
+        RestaurantUserVote.objects.create(user=user2, restaurant=restaurant2, vote_weight=0.9)
+        response = self.client.get(self.url)
+
+        self.assertListEqual(
+            [(result['date'], result['rating']) for result in response.data.get('results')],
+            [(datetime(2020, 1, 1).date(), 1.9)]
+        )
+
+    @mock.patch('django.utils.timezone.now')
+    def test_have_queryset_with_each_day_biggest_total_distinct_users_voted_when_restaurants_have_same_rating(
+            self, mocked_timezone_now
+    ):
+        user = User.objects.create_user(username='u')
+        user2 = User.objects.create_user(username='u2')
+        self.client.force_authenticate(user)
+        mocked_timezone_now.return_value = make_aware(datetime(2020, 1, 1))
+        restaurant1 = Restaurant.objects.create(title='TestTitle1', address='TestAddress')
+        restaurant2 = Restaurant.objects.create(title='TestTitle2', address='TestAddress')
+        RestaurantUserVote.objects.create(user=user, restaurant=restaurant1, vote_weight=1)
+        RestaurantUserVote.objects.create(user=user, restaurant=restaurant1, vote_weight=1)
+        RestaurantUserVote.objects.create(user=user, restaurant=restaurant2, vote_weight=1)
+        RestaurantUserVote.objects.create(user=user2, restaurant=restaurant2, vote_weight=1)
+        response = self.client.get(self.url)
+
+        self.assertListEqual(
+            [(result['date'], result['total_distinct_users_voted']) for result in response.data.get('results')],
+            [(datetime(2020, 1, 1).date(), 2)]
+        )
+
+    @mock.patch('django.utils.timezone.now')
+    def test_have_queryset_with_first_same_day_restaurant_when_total_rating_and_distinct_user_votes_are_same(
+            self, mocked_timezone_now
+    ):
+        user = User.objects.create_user(username='u')
+        user2 = User.objects.create_user(username='u2')
+        self.client.force_authenticate(user)
+        mocked_timezone_now.return_value = make_aware(datetime(2020, 1, 1))
+        restaurant1 = Restaurant.objects.create(title='TestTitle1', address='TestAddress')
+        restaurant2 = Restaurant.objects.create(title='TestTitle2', address='TestAddress')
+        RestaurantUserVote.objects.create(user=user, restaurant=restaurant1, vote_weight=0.3)
+        RestaurantUserVote.objects.create(user=user2, restaurant=restaurant1, vote_weight=0.3)
+        RestaurantUserVote.objects.create(user=user, restaurant=restaurant2, vote_weight=0.3)
+        RestaurantUserVote.objects.create(user=user2, restaurant=restaurant2, vote_weight=0.3)
+        response = self.client.get(self.url)
+
+        result_list = [
+            (result['date'], result['restaurant_id'], result['rating'], result['total_distinct_users_voted'])
+            for result in response.data.get('results')
+        ]
+        self.assertListEqual(result_list, [(datetime(2020, 1, 1).date(), restaurant1.pk, 0.6, 2)])
+
+
 class VoteRestaurantShould(TestCase):
     def setUp(self):
         self.client = APIClient()

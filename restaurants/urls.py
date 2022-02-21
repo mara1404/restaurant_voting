@@ -6,6 +6,7 @@ urlpatterns = [
     path('create/', views.CreateRestaurant.as_view(), name='restaurant_create'),
     path('list/', views.ListRestaurants.as_view(), name='restaurant_list'),
     path('history/', views.ListRestaurantsHistory.as_view(), name='restaurant_history'),
+    path('winners_history/', views.ListRestaurantWinnersHistory.as_view(), name='restaurant_winners_history'),
     path('<int:pk>/', include([
         path('update/', views.UpdateRestaurant.as_view(), name='restaurant_update'),
         path('delete/', views.DeleteRestaurant.as_view(), name='restaurant_delete'),
